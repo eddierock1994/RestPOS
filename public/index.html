@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurant POS</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" id="brand">Restaurant POS</div>
+    <nav class="nav">
+      <a href="#/billing" data-view="billing">Billing</a>
+      <a href="#/dashboard" data-view="dashboard">Dashboard</a>
+      <a href="#/bills" data-view="bills">Past orders</a>
+      <a href="#/config" data-view="config">Configuration</a>
+    </nav>
+    <div class="topbar-right">
+      <span id="clock" class="muted"></span>
+      <button id="adminBtn" class="btn btn-sm">Admin login</button>
+    </div>
+  </header>
+  <main id="view"></main>
+  <div id="toasts"></div>
+  <div id="modalRoot"></div>
+  <iframe id="printFrame" title="print" aria-hidden="true"></iframe>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

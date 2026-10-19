@@ -1,0 +1,20 @@
+# Restaurant data (SQLite database, WAL files, Edge POS profile) - never commit
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Automatic/manual backups and server logs
+backups/
+logs/
+
+# Portable Node.js downloaded by prepare-offline.bat, and optional installers
+runtime/
+installers/
+
+# Misc
+node_modules/
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store
