@@ -89,9 +89,36 @@ export function mountDashboard(root) {
     });
     $('.dow').innerHTML = data.days >= 7 ? barChart(dows, { height: 220, width: 420, color: PALETTE[3] }) : '<div class="chart-empty">Choose a week or longer</div>';
 
-    $('.top').innerHTML = data.topItems.length ? `<table class="data"><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead><tbody>
-      ${data.topItems.map((i) => `<tr><td>${esc(i.name)}<div class="muted" style="font-size:12px">${esc(i.code)} · ${esc(i.category)}</div></td><td class="num">${qtyFmt(i.qty)}</td><td class="num">${money(i.gross)}</td></tr>`).join('')}
-      </tbody></table>` : '<div class="chart-empty">No data</div>';
+    renderTop();
+  }
+
+  // Top items with a tab per category (e.g. see the best-selling juices on their own).
+  let topCat = sessionStorage.getItem('dashTopCat') || '';
+  function renderTop() {
+    const cats = data.categories;
+    if (topCat && !cats.some((c) => c.category === topCat)) topCat = '';
+    let items;
+    if (!topCat) items = data.topItems;
+    else {
+      const map = new Map();
+      for (const it of cats.find((c) => c.category === topCat).items) {
+        const k = `${it.code}|${it.name}`;
+        const e = map.get(k) || { code: it.code, name: it.name, category: topCat, qty: 0, gross: 0 };
+        e.qty += it.qty; e.gross += it.gross;
+        map.set(k, e);
+      }
+      items = [...map.values()].sort((a, b) => b.qty - a.qty || b.gross - a.gross).slice(0, 15);
+    }
+    const tabs = `<div class="top-cats">${[['', 'All'], ...cats.map((c) => [c.category, c.category])].map(([k, l], i) =>
+      `<button class="chip ${k === topCat ? 'active' : ''}" data-tc="${esc(k)}">${k ? `<i class="dot" style="background:${PALETTE[(i - 1) % PALETTE.length]}"></i>` : ''}${esc(l)}</button>`).join('')}</div>`;
+    $('.top').innerHTML = tabs + (items.length ? `<table class="data"><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead><tbody>
+      ${items.map((i) => `<tr><td>${esc(i.name)}<div class="muted" style="font-size:12px">${esc(i.code)}${topCat ? '' : ` · ${esc(i.category)}`}</div></td><td class="num">${qtyFmt(i.qty)}</td><td class="num">${money(i.gross)}</td></tr>`).join('')}
+      </tbody></table>` : '<div class="chart-empty">No data</div>');
+    $('.top').querySelectorAll('[data-tc]').forEach((b) => (b.onclick = () => {
+      topCat = b.dataset.tc;
+      sessionStorage.setItem('dashTopCat', topCat);
+      renderTop();
+    }));
   }
 
   function renderCategories() {

@@ -47,15 +47,27 @@ async function print(buffer, settings) {
   }
 }
 
+// Returns installed Windows printers with port/driver details. Receipt printers on USB are listed first;
+// virtual printers (PDF, XPS, OneNote, Fax) are flagged so the UI can de-emphasise them.
 function listWindowsPrinters() {
   return new Promise((resolve) => {
     if (process.platform !== 'win32') return resolve([]);
-    execFile(
-      'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-Command', 'Get-CimInstance Win32_Printer | ForEach-Object { $_.Name }'],
-      { windowsHide: true, timeout: 20000 },
-      (err, stdout) => resolve(err ? [] : stdout.split(/\r?\n/).map((s) => s.trim()).filter(Boolean))
-    );
+    const ps = 'Get-CimInstance Win32_Printer | Select-Object Name, PortName, DriverName, Default, WorkOffline | ConvertTo-Json -Compress';
+    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps], { windowsHide: true, timeout: 20000 }, (err, stdout) => {
+      if (err || !stdout.trim()) return resolve([]);
+      let rows;
+      try { rows = JSON.parse(stdout); } catch { return resolve([]); }
+      if (!Array.isArray(rows)) rows = [rows];
+      const list = rows.map((p) => {
+        const name = String(p.Name || ''), port = String(p.PortName || ''), driver = String(p.DriverName || '');
+        const text = `${name} ${driver}`;
+        const virtual = /PORTPROMPT|^nul:?$|SHRFAX|^FILE:|XPS|OneNote|PDF|Fax|AnyDesk/i.test(`${port} ${text}`) && !/^USB/i.test(port);
+        const receipt = !virtual && (/^USB/i.test(port) || /POS|receipt|thermal|TM-|XP-|RP\d|\b(58|80)\s?mm|\bLS[- ]?\d/i.test(text));
+        return { name, port, driver, isDefault: !!p.Default, offline: !!p.WorkOffline, virtual, receipt };
+      });
+      list.sort((a, b) => (b.receipt - a.receipt) || (a.virtual - b.virtual) || a.name.localeCompare(b.name));
+      resolve(list);
+    });
   });
 }
 

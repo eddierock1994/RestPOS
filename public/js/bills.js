@@ -19,7 +19,7 @@ export function mountBills(root) {
           <button class="btn" data-export>Export CSV</button>
         </div>
         <div class="menu-table-wrap" style="max-height:calc(100vh - 360px)"><table class="data bills"></table></div></div>
-      <div class="panel" style="width:340px"><h3>Top items</h3><div class="menu-table-wrap" style="max-height:calc(100vh - 360px)"><table class="data top"></table></div></div>
+      <div class="panel" style="width:340px"><h3 class="top-title">Top items</h3><div class="menu-table-wrap" style="max-height:calc(100vh - 360px)"><table class="data top"></table></div></div>
     </div>
   </div>`;
 
@@ -45,10 +45,18 @@ export function mountBills(root) {
     const cats = [...new Set(data.bills.flatMap((b) => (b.categories || '').split(',')).filter(Boolean))].sort();
     if (category && !cats.includes(category)) category = '';
     root.querySelector('.cat').innerHTML = `<option value="">All categories</option>${cats.map((c) => `<option ${c === category ? 'selected' : ''}>${esc(c)}</option>`).join('')}`;
-    root.querySelector('table.top').innerHTML = `<thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead><tbody>${
-      data.topItems.map((i) => `<tr><td>${esc(i.code)} ${esc(i.name)}</td><td class="num">${qtyFmt(i.qty)}</td><td class="num">${money(i.amount)}</td></tr>`).join('')
-      || '<tr><td colspan="3" class="muted">—</td></tr>'}</tbody>`;
     drawList();
+    drawTop();
+  }
+
+  // Top items follow the category filter of the bills list.
+  function drawTop() {
+    const items = data.topItems.filter((i) => !category || i.category === category).slice(0, 50);
+    root.querySelector('.top-title').textContent = category ? `Top items · ${category}` : 'Top items';
+    root.querySelector('table.top').innerHTML = `<thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead><tbody>${
+      items.map((i) => `<tr><td>${esc(i.code)} ${esc(i.name)}${category ? '' : `<div class="muted" style="font-size:12px">${esc(i.category)}</div>`}</td>
+        <td class="num">${qtyFmt(i.qty)}</td><td class="num">${money(i.amount)}</td></tr>`).join('')
+      || '<tr><td colspan="3" class="muted">—</td></tr>'}</tbody>`;
   }
 
   function drawList() {
@@ -95,7 +103,7 @@ export function mountBills(root) {
 
   root.querySelector('.status').onchange = (e) => { status = e.target.value; load(); };
   root.querySelector('.search').oninput = (e) => { search = e.target.value.trim(); if (data) drawList(); };
-  root.querySelector('.cat').onchange = (e) => { category = e.target.value; if (data) drawList(); };
+  root.querySelector('.cat').onchange = (e) => { category = e.target.value; if (data) { drawList(); drawTop(); } };
   root.querySelector('[data-export]').onclick = () => {
     if (!data) return;
     const rows = [['Bill no', 'Closed at', 'Hall', 'Table', 'Items', 'Subtotal', 'Discount', 'Taxable', 'CGST %', 'CGST', 'SGST %', 'SGST', 'Round off', 'Total', 'Payment', 'Status'],

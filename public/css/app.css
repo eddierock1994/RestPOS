@@ -223,6 +223,9 @@ table.cats tfoot th { border-top: 2px solid var(--border); }
 .hb-track span { display: block; height: 100%; border-radius: 7px; }
 .hb-v { font-weight: 600; white-space: nowrap; }
 .hb-v small { color: var(--muted); font-weight: 400; }
+.top-cats { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+.top-cats .chip .dot { width: 9px; height: 9px; margin-right: 4px; }
+.top-cats .chip.active .dot { outline: 1px solid #fff; }
 @media (max-width: 1250px) {
   .cat-wrap { grid-template-columns: 1fr; }
 }

@@ -51,6 +51,7 @@ RestaurantPOS\
   backup.bat           manual backup  (backup.bat E:\POS-Backups  -> also copies to pen drive)
   restore.bat          restore a backup
   reset-pin.bat        reset admin PIN to 1234
+  clear-demo-data.bat  remove demo halls/tables/menu/bills (keeps PIN & settings)
   prepare-offline.bat  run on an INTERNET PC: downloads portable Node.js into runtime\
   server\              backend (Node.js)
   public\              front end (HTML/CSS/JS)
@@ -105,7 +106,8 @@ RestaurantPOS\
 1. Click **Configuration**, then log in with PIN **`1234`**.
 2. **Security and backup:** **change the PIN** first.
 3. **Restaurant and tax:** fill in the name, address, phone, GSTIN, FSSAI, CGST % and SGST % (restaurants are usually 2.5 + 2.5), bill prefix, and footer. If your menu prices already include GST, tick **Menu prices already include GST**.
-4. **Menu list:** delete the demo items and add your own. Give every item a unique short **code** (for example 101, 102, or PBM). To add many items at once, use **Import CSV** (format below).
+   > **Remove the demo data in one go:** close the POS window and run **`clear-demo-data.bat`**, then type `YES`. It deletes all halls, tables, menu items and bills, and restarts bill numbering at 1. Your PIN and settings are kept, and a backup is saved first. Run it before going live; it also deletes real bills.
+4. **Menu list:** delete the demo items (if you didn't use `clear-demo-data.bat`) and add your own. Give every item a unique short **code** (for example 101, 102, or PBM). To add many items at once, use **Import CSV** (format below).
 5. **Halls and layout:** rename or delete the demo halls and add your own. In each hall:
    * Add square, round, or long tables.
    * Drag tables into place. Drag the blue corner to resize.
@@ -169,7 +171,16 @@ First, **install the printer's Windows driver** (it's on the CD or pen drive tha
    *If a print dialog still appears, close **all** POS windows and start again from the desktop shortcut.*
 
 ### Mode 2: Windows printer, raw ESC/POS (recommended for USB printers)
-Choose **Windows printer – raw ESC/POS** and pick the printer name from the list. The POS sends printer commands directly, which gives sharp text, bold headings, and automatic paper cut. No default-printer setting is needed.
+Choose **Windows printer – raw ESC/POS** and pick the printer from the list. The POS sends printer commands directly, which gives sharp text, bold headings, and automatic paper cut. No default-printer setting is needed.
+
+The list shows each printer's **port** and **driver**. USB receipt printers are listed first, and virtual printers (PDF, XPS, OneNote, Fax) are grouped at the bottom.
+
+**Which one is my printer?** Most Indian thermal printers don't use their brand name in Windows. **LS (Logon Systems)**, Xprinter, Rugtek, Everycom and similar printers install as **`POS-80C`**, **`POS-80`** or **`POS-58`** on a **`USB001`** (or `USB002`…) port. To be sure:
+1. Unplug the printer's USB cable.
+2. Click **Refresh printer list**. Your printer is the one that disappears or shows **OFFLINE**.
+3. Plug the cable back in, refresh again, select it, **Save**, then **Print test page**.
+
+**LS / Logon Systems printers:** if the printer doesn't appear at all, install the driver from the LS website, under the *Downloads → Printer Drivers* section ("POS Printer Driver V7.17" for LS-230 and similar models). Do this on a PC with internet and copy the installer to the billing PC with a pen drive. The blue light on the front usually just means power is on. A red or flashing light usually means the paper has run out or the cover is open.
 
 ### Mode 3: Network printer, ESC/POS (LAN/Wi-Fi printers)
 1. Hold the printer's FEED button while switching it on to print a self-test page that shows its **IP address**.
@@ -242,6 +253,7 @@ No internet is required; only a local Wi-Fi router or switch.
 | `backup.bat [folder]` | Saves a consistent backup (safe while running), optionally copied to a folder or pen drive. |
 | `restore.bat [-File path]` | Restores a backup, keeping a copy of the current database. |
 | `reset-pin.bat` | Resets the admin PIN to 1234. |
+| `clear-demo-data.bat [--yes]` | Backs up, then deletes all halls, tables, menu items and bills. Keeps the PIN and all settings, and restarts bill numbering at 1. |
 
 Logs are in `logs\server.log` and `logs\server-error.log`.
 

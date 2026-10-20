@@ -459,9 +459,10 @@ function createApp({ dataDir = process.env.POS_DATA_DIR || path.join(ROOT, 'data
       FROM orders WHERE status = 'paid' AND date(closed_at) BETWEEN ? AND ?`).get(from, to);
     const byMode = db.prepare(`SELECT payment_mode AS mode, COUNT(*) AS count, SUM(total) AS total FROM orders
       WHERE status = 'paid' AND date(closed_at) BETWEEN ? AND ? GROUP BY payment_mode`).all(from, to);
-    const topItems = db.prepare(`SELECT oi.code, oi.name, SUM(oi.qty) AS qty, SUM(oi.qty * oi.price) AS amount FROM order_items oi
+    const topItems = db.prepare(`SELECT oi.code, oi.name, COALESCE(NULLIF(TRIM(oi.category), ''), 'Uncategorised') AS category,
+      SUM(oi.qty) AS qty, SUM(oi.qty * oi.price) AS amount FROM order_items oi
       JOIN orders o ON o.id = oi.order_id WHERE o.status = 'paid' AND date(o.closed_at) BETWEEN ? AND ?
-      GROUP BY oi.code, oi.name ORDER BY amount DESC LIMIT 50`).all(from, to);
+      GROUP BY oi.code, oi.name, 3 ORDER BY amount DESC`).all(from, to);
     return { from, to, bills, summary, byMode, topItems };
   });
   route('GET', '/api/analytics', ({ req, query }) => { requireAdmin(req); return analytics(db, query); });

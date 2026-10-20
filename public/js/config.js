@@ -378,10 +378,13 @@ function printerTab(el) {
     <h3>Which mode should I use?</h3>
     <ul style="margin:0;padding-left:18px;line-height:1.6">
       <li><b>Browser print</b> – works with any printer that has a Windows driver. Set the thermal printer as the Windows <i>default printer</i>. The launcher starts Edge with <code>--kiosk-printing</code>, so bills print instantly without a dialog.</li>
-      <li><b>Windows printer (raw ESC/POS)</b> – USB printer installed in Windows (e.g. "POS-80", "EPSON TM-T82"). Sends printer commands directly: crisp text and automatic paper cut. Pick the printer name below.</li>
+      <li><b>Windows printer (raw ESC/POS)</b> – USB printer installed in Windows. Sends printer commands directly: crisp text and automatic paper cut. Pick the printer from the list – receipt printers on a <code>USB001</code>-style port are shown first.</li>
       <li><b>Network printer (ESC/POS)</b> – LAN/Wi‑Fi thermal printer. Enter its IP address (print the printer's self-test page to see it); port is usually 9100.</li>
     </ul>
-    <div class="row" style="margin-top:12px"><button type="button" class="btn" data-test>Print test page</button><span class="muted">Save settings first, then test.</span></div>
+    <p style="margin:10px 0 0"><b>Can't tell which printer is yours?</b> Most Indian thermal printers (LS / Logon Systems, Xprinter, Rugtek, Everycom…) install as
+      <b>POS-80C</b>, <b>POS-80</b> or <b>POS-58</b> on a <b>USB001</b> port – the brand name does not appear. Unplug the printer's USB cable, press
+      <i>Refresh printer list</i>, and the one that shows <b>OFFLINE</b> or disappears is yours.</p>
+    <div class="row" style="margin-top:12px"><button type="button" class="btn" data-test>Print test page</button><button type="button" class="btn" data-refresh>Refresh printer list</button><span class="muted">Save settings first, then test.</span></div>
   </div>`;
   settingsForm(el, 'Thermal printer', [
     { key: 'printerMode', label: 'Print mode', type: 'select', options: [['browser', 'Browser print (any driver)'], ['windows', 'Windows printer – raw ESC/POS (USB)'], ['network', 'Network printer – ESC/POS (IP)']] },
@@ -405,12 +408,26 @@ function printerTab(el) {
       };
       form.elements.printerMode.onchange = sync;
       sync();
-      try {
-        const printers = await api('GET', '/api/printers');
-        const current = state.settings.printerName;
-        const all = [...new Set([current, ...printers].filter(Boolean))];
-        sel.innerHTML = `<option value="">— select —</option>${all.map((p) => `<option ${p === current ? 'selected' : ''}>${esc(p)}</option>`).join('')}`;
-      } catch (e) { toastErr(e); }
+      const loadPrinters = async () => {
+        const current = sel.value || state.settings.printerName;
+        sel.innerHTML = '<option value="">(loading printers…)</option>';
+        try {
+          const printers = await api('GET', '/api/printers');
+          const label = (p) => `${p.name}  —  ${(p.port || '?').length > 24 ? p.port.slice(0, 22) + '…' : p.port || '?'}${p.driver && p.driver !== p.name ? ` · ${p.driver}` : ''}${p.isDefault ? ' · default' : ''}${p.offline ? ' · OFFLINE' : ''}`;
+          const opt = (p) => `<option value="${esc(p.name)}" ${p.name === current ? 'selected' : ''}>${esc(label(p))}</option>`;
+          const receipt = printers.filter((p) => p.receipt), other = printers.filter((p) => !p.receipt && !p.virtual), virt = printers.filter((p) => p.virtual);
+          const missing = current && !printers.some((p) => p.name === current) ? `<option selected value="${esc(current)}">${esc(current)} (not found)</option>` : '';
+          sel.innerHTML = `<option value="">— select —</option>${missing}
+            ${receipt.length ? `<optgroup label="Likely receipt printers (USB / POS)">${receipt.map(opt).join('')}</optgroup>`
+              : '<option value="" disabled>No USB receipt printer found – check the cable, power and driver, then Refresh</option>'}
+            ${other.length ? `<optgroup label="Other printers">${other.map(opt).join('')}</optgroup>` : ''}
+            ${virt.length ? `<optgroup label="Not printers (PDF / XPS / OneNote / Fax)">${virt.map(opt).join('')}</optgroup>` : ''}`;
+          if (!current && receipt.length === 1) sel.value = receipt[0].name;
+        } catch (e) { toastErr(e); }
+      };
+      form.querySelector('[data-refresh]').onclick = loadPrinters;
+      sel.closest('label').style.gridColumn = 'span 2';
+      await loadPrinters();
     },
   });
 }
