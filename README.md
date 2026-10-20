@@ -15,6 +15,7 @@ A lightweight, fully offline restaurant billing system for Windows 10/11. It's b
   * Headline numbers compared with the previous period of the same length.
   * Charts: sales trend, **category split** (for example Food / Juices / Desserts) with item-level detail, payment modes, busy hours, day of week, halls, and top items.
   * Category reports can be printed or exported, for example to settle with an outside juice counter.
+* **Session closings:** configurable sessions (for example Morning, Afternoon, Night). Closing a session shows and prints its summary: income, GST, total, payment modes, and categories.
 * **All data stays on this PC** in one file (`data\pos.db`). Nothing is sent to the internet.
 * **Automatic daily backups**, plus scripts to back up, restore, and reset a forgotten PIN.
 * **Multiple devices:** other PCs, tablets, or phones on the same Wi-Fi/LAN can open the POS in a browser. Screens refresh every 5 seconds.
@@ -113,7 +114,8 @@ RestaurantPOS\
    * Drag tables into place. Drag the blue corner to resize.
    * Click a table to change its name, number of seats, or shape.
    * Click **Save layout**.
-6. **Printer:** see section 5, then click **Print test page**.
+6. **Sessions & closing:** set your session names and times.
+7. **Printer:** see section 5, then click **Print test page**.
 
 **Menu CSV format.** The first row must be the header. The `category`, `veg` and `available` columns are optional.
 
@@ -136,13 +138,13 @@ Tip: use **Export CSV** to get a template. Edit it in Excel and import it again.
    * Or tap items in the quick menu, filtered by category chips.
    * Change quantities with − / + or by typing. Remove a line with ×. Enter a discount % if needed.
 3. **Print bill:** the bill gets its number and the table turns blue. If more items are added afterwards, press **Reprint bill**.
-4. **Settle and clear:** choose Cash, UPI, Card, or Other. The bill is saved and the table turns green again.
+4. **Settle and clear:** choose Cash, UPI, Card, or Other and enter the waiter's name (names used before are suggested). The waiter is printed on the bill. The bill is saved and the table turns green again.
 5. Other actions:
    * **Move to table…** shifts the order to another free table.
    * **Cancel order** needs the admin PIN; cancelled orders are logged in reports.
    * **Clear table** frees an occupied table that has no items.
 
-**Past orders** (admin): choose *Today, Yesterday, This week, Last week, This month, Last month, This FY*, or any dates. Every bill is listed with its items, GST, and payment mode. You can search by bill number, table, or item, filter by category, view or reprint a bill, and export to CSV for GST filing.
+**Past orders** (admin): choose *Today, Yesterday, This week, Last week, This month, Last month, This FY*, or any dates. Every bill is listed with its items, GST, payment mode, and waiter. You can search by bill number, table, item, or waiter, filter by category, view or reprint a bill, and export to CSV for GST filing.
 
 **Dashboard** (admin) uses the same period picker. It shows:
 * Net collected, bills, average bill, items sold, discounts, GST, and cancelled orders. ▲▼ shows the change compared with the previous period of the same length.
@@ -157,6 +159,25 @@ Notes:
 * If you expand only some categories, Print and Export include just those.
 * Amounts are after the bill discount and before GST.
 * Each order line keeps the category it had when it was sold. Editing the menu later doesn't change past reports.
+
+**Closing a session (admin)**
+
+The day is split into sessions such as Morning, Afternoon and Night. You set them up in **Configuration → Sessions & closing**; the defaults are 06:00–11:30, 11:30–17:00 and 17:00–23:30. A session can run past midnight, for example 18:00–01:00.
+
+When a session has ended, an orange **Close … session** button appears at the top of every screen. Click it, or open **Closings**, and log in with the admin PIN. The screen shows:
+* **Income** (sales after discount, excluding GST) **+ GST** (CGST and SGST) **= Total collected**
+* the number of bills and the bill-number range
+* the split by payment mode (count the cash against it) and by category
+* any cancelled orders
+
+Click **Close session**. Leave **Print closing report** ticked to get the slip on the thermal printer.
+
+Which bills go into a closing:
+* A closing takes every settled bill that isn't in an earlier closing, up to the moment you close. A bill settled a few minutes after the session's end time still counts. Bills settled after you close go to the next closing.
+* If a session wasn't closed, it must be closed first. It then includes bills up to the start of the next session. Within the grace period (30 minutes by default; change it in the settings) it also keeps late bills settled after that start.
+* Tables that are still open aren't included. They're counted in whichever closing comes after they're settled.
+
+**Closings → Past closings** lists closings for any period with totals. You can **View** or **Print** any of them again. **Undo** re-opens the most recent closing, for example if it was closed too early; its bills are then included in the next closing.
 
 ---
 
@@ -253,7 +274,7 @@ No internet is required; only a local Wi-Fi router or switch.
 | `backup.bat [folder]` | Saves a consistent backup (safe while running), optionally copied to a folder or pen drive. |
 | `restore.bat [-File path]` | Restores a backup, keeping a copy of the current database. |
 | `reset-pin.bat` | Resets the admin PIN to 1234. |
-| `clear-demo-data.bat [--yes]` | Backs up, then deletes all halls, tables, menu items and bills. Keeps the PIN and all settings, and restarts bill numbering at 1. |
+| `clear-demo-data.bat [--yes]` | Backs up, then deletes all halls, tables, menu items, bills and closings. Keeps the PIN and all settings, and restarts bill numbering at 1. |
 
 Logs are in `logs\server.log` and `logs\server-error.log`.
 
@@ -284,6 +305,7 @@ npm test           # API + billing tests (node:test, uses a temp database)
 * `server/db.js`: SQLite schema, defaults, demo seed, PIN hashing (scrypt)
 * `server/billing.js`: GST calculation (exclusive and inclusive pricing, discount, round-off)
 * `server/analytics.js`: dashboard figures (trend, category/item split, payment modes, hours, halls, comparison with the previous period)
+* `server/closings.js`: session rules, closing summaries, close and undo
 * `server/escpos.js`, `server/printer.js`, `scripts/raw-print.ps1`: ESC/POS receipts, sent over TCP or through the Windows spooler
 * `public/js/*`: billing screen, configuration, reports, floor-plan renderer/editor, receipt HTML
 

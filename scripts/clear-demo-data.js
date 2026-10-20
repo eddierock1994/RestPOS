@@ -14,7 +14,7 @@ const backupDir = process.env.POS_BACKUP_DIR || path.join(root, 'backups');
 async function confirm() {
   if (process.argv.includes('--yes')) return true;
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const answer = await new Promise((r) => rl.question('This deletes ALL halls, tables, menu items and bills (settings and PIN are kept).\nType YES to continue: ', r));
+  const answer = await new Promise((r) => rl.question('This deletes ALL halls, tables, menu items, bills and closings (settings and PIN are kept).\nType YES to continue: ', r));
   rl.close();
   return answer.trim() === 'YES';
 }
@@ -37,8 +37,8 @@ async function confirm() {
   const before = { halls: count('halls'), tables: count('tables'), menu: count('menu_items'), orders: count('orders') };
   db.exec('BEGIN IMMEDIATE');
   try {
-    db.exec(`DELETE FROM order_items; DELETE FROM orders; DELETE FROM tables; DELETE FROM halls; DELETE FROM menu_items;
-      DELETE FROM sqlite_sequence WHERE name IN ('order_items', 'orders', 'tables', 'halls', 'menu_items');`);
+    db.exec(`DELETE FROM closings; DELETE FROM order_items; DELETE FROM orders; DELETE FROM tables; DELETE FROM halls; DELETE FROM menu_items;
+      DELETE FROM sqlite_sequence WHERE name IN ('closings', 'order_items', 'orders', 'tables', 'halls', 'menu_items');`);
     db.prepare("UPDATE settings SET value = '1' WHERE key = 'nextBillNumber'").run();
     db.exec('COMMIT');
   } catch (e) {

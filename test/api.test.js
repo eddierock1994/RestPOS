@@ -9,6 +9,9 @@ const { computeTotals } = require('../server/billing');
 const { buildReceipt } = require('../server/escpos');
 const { createApp } = require('../server/index');
 
+// Total of the second settled bill in the API flow (net collected minus the first bill's 798).
+const paid2Total = (an) => an.data.summary.total - 798;
+
 test('computeTotals: exclusive GST with discount and round off', () => {
   const t = computeTotals([{ price: 220, qty: 2 }, { price: 45, qty: 3 }], { discountPct: 10, cgstPercent: 2.5, sgstPercent: 2.5, roundOff: true });
   assert.equal(t.subtotal, 575);
@@ -108,15 +111,18 @@ test('API flow: order, bill, settle, reports, layout', async (t) => {
   const billed = (await call('POST', `/api/tables/${table.id}/bill`)).data;
   assert.equal(billed.bill_no, 'T-1');
   assert.equal((await call('GET', '/api/floor')).data[0].tables[0].status, 'billed');
-  const paid = (await call('POST', `/api/tables/${table.id}/settle`, { paymentMode: 'UPI' })).data;
+  const paid = (await call('POST', `/api/tables/${table.id}/settle`, { paymentMode: 'UPI', waiter: '  Ravi ' })).data;
   assert.equal(paid.status, 'paid');
   assert.equal(paid.bill_no, 'T-1');
+  assert.equal(paid.waiter, 'Ravi');
   assert.equal(paid.total, 798); // 760 + 5% = 798
   assert.equal((await call('GET', '/api/floor')).data[0].tables[0].status, 'free');
+  assert.deepEqual((await call('GET', '/api/waiters')).data, ['Ravi']);
 
   // receipt bytes build
   const receipt = buildReceipt(paid, (await call('GET', '/api/settings')).data);
   assert.ok(receipt.includes(Buffer.from('T-1')));
+  assert.ok(receipt.includes(Buffer.from('Waiter: Ravi')));
   assert.ok(receipt.includes(Buffer.from('Rs. 798.00')));
 
   // cancel needs PIN
@@ -129,6 +135,7 @@ test('API flow: order, bill, settle, reports, layout', async (t) => {
   assert.equal(rep.summary.count, 1);
   assert.equal(rep.summary.total, 798);
   assert.equal(rep.byMode[0].mode, 'UPI');
+  assert.equal(rep.bills[0].waiter, 'Ravi');
   assert.match(rep.bills[0].items_text, /Paneer Tikka x2/);
 
   // analytics: category split (net after discount), trend, previous period
@@ -176,6 +183,32 @@ test('API flow: order, bill, settle, reports, layout', async (t) => {
   await new Promise((r) => setTimeout(r, 100));
   fake.close();
   assert.ok(Buffer.concat(received).includes(Buffer.from('TOTAL')));
+
+  // session closings
+  token = '';
+  assert.equal((await call('GET', '/api/closings/status')).status, 401);
+  assert.equal((await call('GET', '/api/closings/reminder')).status, 200);
+  token = (await call('POST', '/api/login', { pin: '1234' })).data.token;
+  assert.equal((await call('PUT', '/api/settings', { sessions: [{ name: 'A', start: '06:00', end: '12:00' }, { name: 'B', start: '11:00', end: '15:00' }] })).status, 400);
+  assert.equal((await call('PUT', '/api/settings', { sessions: [{ name: 'All day', start: '00:00', end: '23:59' }] })).status, 200);
+  const cst = (await call('GET', '/api/closings/status')).data;
+  assert.equal(cst.target.session, 'All day');
+  assert.equal(cst.summary.bills, 2);
+  const closing = await call('POST', '/api/closings', { date: cst.target.date, session: cst.target.session });
+  assert.equal(closing.status, 200);
+  assert.equal(closing.data.total, 798 + paid2Total(an));
+  assert.equal((await call('GET', '/api/closings')).data.length, 1);
+  received.length = 0;
+  const fake2 = net.createServer((sock) => sock.on('data', (d) => received.push(d)));
+  await new Promise((r) => fake2.listen(0, '127.0.0.1', r));
+  await call('PUT', '/api/settings', { printerPort: fake2.address().port });
+  assert.equal((await call('POST', `/api/print/closing/${closing.data.id}`)).status, 200);
+  await new Promise((r) => setTimeout(r, 100));
+  fake2.close();
+  const slip = Buffer.concat(received).toString('latin1');
+  assert.match(slip, /SESSION CLOSING REPORT/);
+  assert.match(slip, /INCOME \(excl\. GST\)/);
+  assert.equal((await call('DELETE', `/api/closings/${closing.data.id}`)).status, 200);
 
   // backup
   const b = await call('POST', '/api/backups');

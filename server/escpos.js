@@ -69,6 +69,7 @@ function buildReceipt(bill, settings) {
   p.align('left').rule();
   p.pair(`Bill: ${bill.bill_no || '-'}`, formatDate(bill.closed_at || bill.billed_at || new Date()));
   p.pair(`Table: ${bill.table_name}`, bill.hall_name || '');
+  if (bill.waiter) p.line(`Waiter: ${bill.waiter}`);
   p.rule();
   p.bold(true).line(padR('Item', cols.name) + padL('Qty', cols.qty) + padL('Rate', cols.rate) + padL('Amount', cols.amt)).bold(false);
   p.rule();
@@ -95,6 +96,44 @@ function buildReceipt(bill, settings) {
   return p.build();
 }
 
+function buildClosingReport(c, settings) {
+  const W = Number(settings.paperWidth) === 58 ? 32 : 48;
+  const p = new EscPos(W);
+  const time = (ts) => String(ts || '').slice(11, 16);
+  p.align('center').bold(true).size(2, 2);
+  wrap(settings.restaurantName, Math.floor(W / 2)).forEach((l) => p.line(l));
+  p.size(1, 1).line('SESSION CLOSING REPORT').bold(false);
+  p.align('left').rule();
+  p.pair('Session', `${c.session}${c.part > 1 ? ` (part ${c.part})` : ''}`);
+  p.pair('Date', formatDate(c.date).slice(0, 10));
+  p.pair('Session time', `${time(c.sessionStart)} - ${time(c.sessionEnd)}`);
+  p.pair('Closed at', formatDate(c.closedAt));
+  p.pair('Bills', c.bills ? `${c.bills}  (${c.firstBill} to ${c.lastBill})` : '0');
+  p.rule();
+  if (c.discount > 0) { p.pair('Gross sales', money(c.gross)); p.pair('Less discount', '-' + money(c.discount)); }
+  p.bold(true).pair('INCOME (excl. GST)', money(c.taxable)).bold(false);
+  p.pair('  CGST', money(c.cgst));
+  p.pair('  SGST', money(c.sgst));
+  p.bold(true).pair('GST TOTAL', money(c.gst)).bold(false);
+  if (c.roundOff) p.pair('Round off', money(c.roundOff));
+  p.rule();
+  p.bold(true).size(1, 2).pair('TOTAL', `${toAscii(settings.currencySymbol)} ${money(c.total)}`).size(1, 1).bold(false);
+  p.rule();
+  if (c.payments?.length) {
+    p.bold(true).line('Payment modes').bold(false);
+    c.payments.forEach((m) => p.pair(`  ${m.mode} (${m.bills})`, money(m.total)));
+    p.rule();
+  }
+  if (c.categories?.length) {
+    p.bold(true).line('Categories (excl. GST)').bold(false);
+    c.categories.forEach((x) => p.pair(`  ${x.category.slice(0, W - 14)} x${qtyStr(x.qty)}`, money(x.net)));
+    p.rule();
+  }
+  if (c.cancelled?.count) p.line(`Cancelled orders: ${c.cancelled.count} (${money(c.cancelled.amount)})`);
+  p.feed(2).line('Signature: ____________________').feed(4);
+  if (settings.autoCut) p.cut();
+  return p.build();
+}
 function buildTestPage(settings) {
   const W = Number(settings.paperWidth) === 58 ? 32 : 48;
   const p = new EscPos(W);
@@ -113,4 +152,4 @@ function formatDate(d) {
   return `${z(dt.getDate())}-${z(dt.getMonth() + 1)}-${dt.getFullYear()} ${z(dt.getHours())}:${z(dt.getMinutes())}`;
 }
 
-module.exports = { buildReceipt, buildTestPage, EscPos };
+module.exports = { buildReceipt, buildTestPage, buildClosingReport, EscPos };

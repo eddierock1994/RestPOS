@@ -1,0 +1,143 @@
+code,name,category,price,veg,available
+101,Chicken 65 (5 Pcs),Starters,180,0,1
+102,Chicken Lolly Pop (4 Pcs),Starters,190,0,1
+103,Malabar Chicken Fry 1/2,Starters,280,0,1
+104,Dragon Chicken,Starters,270,0,1
+105,Chilly Fish,Starters,260,0,1
+106,Fish Finger,Starters,250,0,1
+107,Prawn '65,Starters,260,0,1
+108,Chilly Prawns,Starters,280,0,1
+109,Prawn Golden Fry,Starters,260,0,1
+110,Prawn Roasted Fry,Starters,260,0,1
+111,Paneer / Gobi / Mushroom '65,Starters,160,1,1
+112,Chicken Fried Rice,Fried Rice / Noodles,190,0,1
+113,Shezwan Chicken Fried Rice,Fried Rice / Noodles,210,0,1
+114,Spl. Chicken Fried Rice,Fried Rice / Noodles,220,0,1
+115,Egg Fried Rice,Fried Rice / Noodles,220,0,1
+116,Mixed Fried Rice,Fried Rice / Noodles,230,0,1
+117,Prawn Fried Rice,Fried Rice / Noodles,230,0,1
+118,Veg. Fried Rice,Fried Rice / Noodles,150,1,1
+119,Gobi / Mush / Paneer Fried Rice,Fried Rice / Noodles,160,1,1
+120,Chicken Noodles,Fried Rice / Noodles,190,0,1
+121,Special Chicken Noodles,Fried Rice / Noodles,220,0,1
+122,Prawn Noodles,Fried Rice / Noodles,230,0,1
+123,Chinese / American Chopsey,Fried Rice / Noodles,250,0,1
+124,Mutton Biriyani,Biriyani,270,0,1
+125,Mutton Biriyani 1/4,Biriyani,140,0,1
+126,Chicken Biriyani,Biriyani,190,0,1
+127,Rolex Spl. Chicken Biriyani,Biriyani,220,0,1
+128,Mughalai Chicken Biriyani,Biriyani,220,0,1
+129,Hyderabad Chicken Biriyani,Biriyani,210,0,1
+130,Fish Biriyani,Biriyani,250,0,1
+131,Prawn Biriyani,Biriyani,250,0,1
+132,Egg Biriyani,Biriyani,160,0,1
+133,Veg. Biriyani,Biriyani,140,1,1
+134,Kushka,Biriyani,150,1,1
+135,Chicken Meals,Meals,150,0,1
+136,Mutton Meals,Meals,190,0,1
+137,Fish Meals,Meals,180,0,1
+138,Veg. Meals,Meals,125,1,1
+139,Chilly Chicken (5 Pcs),Chinese,170,0,1
+140,Chicken Manchurian,Chinese,260,0,1
+141,Ginger Chicken,Chinese,260,0,1
+142,Garlic Chicken,Chinese,260,0,1
+143,Chicken Shezwan,Chinese,260,0,1
+144,Chilly Mutton (6 Pcs),Chinese,270,0,1
+145,Gobi Manchurian,Chinese,170,1,1
+146,Chilly Paneer,Chinese,170,1,1
+147,Chicken Curry (1/4),Chicken,140,0,1
+148,Chicken Masala (1/4),Chicken,150,0,1
+149,Butter Chicken Masala (1/4),Chicken,160,0,1
+150,Chicken Chettinadu (1/4),Chicken,150,0,1
+151,Chicken Pepper Masala (1/4),Chicken,150,0,1
+152,Egg Masala,Egg,110,0,1
+153,Egg Burji Masala,Egg,120,0,1
+154,Egg Roasted Fry,Egg,150,0,1
+155,Egg Podimas,Egg,120,0,1
+156,Omelette,Egg,50,0,1
+157,Mutton Kuruma (1/4),Mutton,170,0,1
+158,Mutton Paya (1/4),Mutton,195,0,1
+159,Mutton Pepper Paya (1/4),Mutton,210,0,1
+160,Mutton Pepper Chops (1/4),Mutton,180,0,1
+161,Mutton Fry (1/4),Mutton,160,0,1
+162,Mutton Pallipalayam,Mutton,270,0,1
+163,Mix Veg Curry,Vegetarian,110,1,1
+164,Gobi Butter Masala,Vegetarian,150,1,1
+165,Paneer Butter Masala,Vegetarian,160,1,1
+166,Veg Chettinadu,Vegetarian,150,1,1
+167,Kadai Paneer,Vegetarian,160,1,1
+168,Mushroom Pepper Masala,Vegetarian,150,1,1
+169,Sweet Corn Chicken Soup,Soups,140,0,1
+170,Hot & Sour Chicken Soup,Soups,140,0,1
+171,Chicken Manchow Soup,Soups,150,0,1
+172,Hot & Sour Veg Soup,Soups,120,1,1
+173,Fish Tawa Fry (as per Size),Fish & Prawn,0,0,0
+174,Pomfret Fry (as per Size),Fish & Prawn,0,0,0
+175,Fish Masala,Fish & Prawn,250,0,1
+176,Malabar Fish Curry,Fish & Prawn,260,0,1
+177,Nethili Fry,Fish & Prawn,150,0,1
+178,Prawn Masala,Fish & Prawn,250,0,1
+179,Mutton Fry Boneless,Special Tawa Fries,150,0,1
+180,Chicken Pepper Fry,Special Tawa Fries,140,0,1
+181,Prawn Masala Fry,Special Tawa Fries,160,0,1
+182,Parotta,Parotta & Breads,25,1,1
+183,Wheat Parotta,Parotta & Breads,40,1,1
+184,Nool Parotta,Parotta & Breads,30,1,1
+185,Ceylon Parotta,Parotta & Breads,40,1,1
+186,Ceylon Egg Parotta,Parotta & Breads,160,0,1
+187,Ceylon Chicken Parotta,Parotta & Breads,190,0,1
+188,Ceylon Mutton Parotta,Parotta & Breads,240,0,1
+189,Madras Egg Parotta,Parotta & Breads,160,0,1
+190,Chapathi,Parotta & Breads,30,1,1
+191,Idiyappam,Parotta & Breads,12,1,1
+192,Naan,Parotta & Breads,35,1,1
+193,Butter Naan,Parotta & Breads,40,1,1
+194,Tandoori Roti,Parotta & Breads,30,1,1
+195,Kulcha,Parotta & Breads,50,1,1
+196,Phulka,Parotta & Breads,30,1,1
+197,Tandoori Chicken (Half),Tandoori & Kebabs,240,0,1
+198,Tandoori Chicken (Qtr),Tandoori & Kebabs,130,0,1
+199,BBQ (Half),Tandoori & Kebabs,250,0,1
+200,Pepper BBQ (Half),Tandoori & Kebabs,250,0,1
+201,Al-Faham (Half),Tandoori & Kebabs,250,0,1
+202,Al-Faham (Quarter),Tandoori & Kebabs,160,0,1
+203,Afghani Chicken (Quarter),Tandoori & Kebabs,140,0,1
+204,Tangdi Kabab (2 pcs),Tandoori & Kebabs,180,0,1
+205,Reshmi Kabab (4 pcs),Tandoori & Kebabs,240,0,1
+206,Hariyali Kabab (4 pcs),Tandoori & Kebabs,180,0,1
+207,Chicken Tikka (4 pcs),Tandoori & Kebabs,160,0,1
+208,Fish Tikka (4 pcs),Tandoori & Kebabs,250,0,1
+209,Fish Tikka (2 pcs),Tandoori & Kebabs,135,0,1
+210,Chicken Seekh Kabab,Tandoori & Kebabs,230,0,1
+211,Green Salad,"Salad, Raitha & Snacks",50,1,1
+212,Raitha,"Salad, Raitha & Snacks",40,1,1
+213,Chicken Cutlet (1 pc),"Salad, Raitha & Snacks",60,0,1
+214,Chicken Spring Roll,"Salad, Raitha & Snacks",60,0,1
+215,Veg Cutlet (1 pc),"Salad, Raitha & Snacks",50,1,1
+216,Veg Spring Roll,"Salad, Raitha & Snacks",60,1,1
+J01,Apple Juice,Juices & Milkshakes,90,1,1
+J02,Orange Juice,Juices & Milkshakes,90,1,1
+J03,Mosambi Juice,Juices & Milkshakes,90,1,1
+J04,Pineapple Juice,Juices & Milkshakes,90,1,1
+J05,Chickoo Juice,Juices & Milkshakes,90,1,1
+J06,Pomegranate Juice,Juices & Milkshakes,70,1,1
+J07,Strawberry Juice,Juices & Milkshakes,70,1,1
+J08,Grape Juice,Juices & Milkshakes,70,1,1
+J09,Vanilla Milk Shake,Juices & Milkshakes,120,1,1
+J10,Strawberry Milk Shake,Juices & Milkshakes,120,1,1
+J11,Chocolate Milk Shake,Juices & Milkshakes,120,1,1
+J12,Mango Milk Shake,Juices & Milkshakes,120,1,1
+217,Fruit Salad Ice Cream,Ice Creams,90,1,1
+218,Vanilla Ice Cream,Ice Creams,70,1,1
+219,Pista Ice Cream,Ice Creams,70,1,1
+220,Butter Scotch Ice Cream,Ice Creams,70,1,1
+221,Chocolate Ice Cream,Ice Creams,70,1,1
+222,Strawberry Ice Cream,Ice Creams,70,1,1
+223,Mini Falooda Ice Cream,Ice Creams,100,1,1
+224,Spl. Falooda Ice Cream,Ice Creams,130,1,1
+225,Chicken Kassa,Rolex Special,340,0,1
+226,Mutton Kassa,Rolex Special,360,0,1
+227,Chicken Kolhapur Masala,Rolex Special,340,0,1
+228,Chicken Roasted Masala,Rolex Special,350,0,1
+229,Rolex Chicken Fry,Rolex Special,160,0,1
+230,Roasted Chicken Fry,Rolex Special,160,0,1

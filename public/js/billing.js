@@ -280,24 +280,30 @@ export function mountBilling(root) {
     },
     async settle() {
       const o = v.order;
+      const waiters = await api('GET', '/api/waiters').catch(() => []);
       const choice = await modal(`Settle ${currentTable().name} — ${cur(o.totals.total)}`, (body, close) => {
         let mode = 'Cash';
         body.innerHTML = `
           <p class="muted">Select payment mode. The table will be cleared.</p>
           <div class="pay-modes">${PAY_MODES.map((m) => `<button class="btn ${m === mode ? 'active' : ''}" data-m="${m}">${m}</button>`).join('')}</div>
-          <label class="check" style="margin-top:14px"><input type="checkbox" ${o.bill_no ? '' : 'checked'}> Print bill</label>
+          <label class="field" style="margin-top:14px">Waiter name<input class="waiter" list="waiterlist" maxlength="40" autocomplete="off">
+            <datalist id="waiterlist">${waiters.map((w) => `<option value="${esc(w)}">`).join('')}</datalist></label>
+          <label class="check" style="margin-top:14px"><input type="checkbox" class="print" ${o.bill_no ? '' : 'checked'}> Print bill</label>
           <div class="actions"><button class="btn" data-x>Cancel</button><button class="btn btn-success btn-lg" data-ok>Settle &amp; clear</button></div>`;
         body.querySelectorAll('[data-m]').forEach((b) => (b.onclick = () => {
           mode = b.dataset.m;
           body.querySelectorAll('[data-m]').forEach((x) => x.classList.toggle('active', x === b));
         }));
+        const waiter = body.querySelector('input.waiter');
+        const ok = () => close({ mode, waiter: waiter.value.trim(), print: body.querySelector('input.print').checked });
         body.querySelector('[data-x]').onclick = () => close(null);
-        body.querySelector('[data-ok]').onclick = () => close({ mode, print: body.querySelector('input').checked });
-        body.querySelector('[data-ok]').focus();
+        body.querySelector('[data-ok]').onclick = ok;
+        waiter.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); ok(); } };
+        waiter.focus();
       });
       if (!choice) return;
       try {
-        const bill = await api('POST', `/api/tables/${v.tableId}/settle`, { paymentMode: choice.mode });
+        const bill = await api('POST', `/api/tables/${v.tableId}/settle`, { paymentMode: choice.mode, waiter: choice.waiter });
         toast(`Bill ${bill.bill_no} settled (${choice.mode})`, 'ok');
         if (choice.print) await printOrder(bill);
         v.order = null;

@@ -13,7 +13,7 @@ export function mountBills(root) {
       <div class="panel grow" style="min-width:0">
         <div class="row" style="margin-bottom:10px">
           <h3 class="list-title" style="margin:0">Bills</h3><span class="spacer"></span>
-          <input class="search" placeholder="Search bill no, table or item" style="width:230px">
+          <input class="search" placeholder="Search bill no, table, item or waiter" style="width:230px">
           <select class="cat"><option value="">All categories</option></select>
           <select class="status"><option value="paid">Paid bills</option><option value="cancelled">Cancelled orders</option></select>
           <button class="btn" data-export>Export CSV</button>
@@ -27,7 +27,7 @@ export function mountBills(root) {
     if (category && !(b.categories || '').split(',').includes(category)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
-    return [b.bill_no, b.table_name, b.hall_name, b.items_text, b.payment_mode].some((v) => String(v || '').toLowerCase().includes(q));
+    return [b.bill_no, b.table_name, b.hall_name, b.items_text, b.payment_mode, b.waiter].some((v) => String(v || '').toLowerCase().includes(q));
   });
 
   async function load() {
@@ -64,12 +64,12 @@ export function mountBills(root) {
     const title = status === 'paid' ? 'Bills' : 'Cancelled orders';
     root.querySelector('.list-title').textContent = rows.length === data.bills.length ? `${title} (${rows.length})` : `${title} (${rows.length} of ${data.bills.length} · ${cur(rows.reduce((a, b) => a + b.total, 0))})`;
     const t = root.querySelector('table.bills');
-    t.innerHTML = `<thead><tr><th>Bill</th><th>Closed</th><th>Table</th><th>Items</th><th class="num">GST</th><th class="num">Total</th><th>Mode</th><th></th></tr></thead><tbody>${
+    t.innerHTML = `<thead><tr><th>Bill</th><th>Closed</th><th>Table</th><th>Items</th><th class="num">GST</th><th class="num">Total</th><th>Mode</th><th>Waiter</th><th></th></tr></thead><tbody>${
       rows.map((b) => `<tr data-id="${b.id}"><td><b>${esc(b.bill_no || '-')}</b></td><td style="white-space:nowrap">${esc(b.closed_at)}</td><td style="white-space:nowrap">${esc(b.hall_name)} / ${esc(b.table_name)}</td>
         <td class="items-cell" title="${esc(b.items_text)}">${esc(b.items_text || '')}</td>
-        <td class="num">${money(b.cgst + b.sgst)}</td><td class="num"><b>${money(b.total)}</b></td><td>${esc(b.payment_mode || '')}</td>
+        <td class="num">${money(b.cgst + b.sgst)}</td><td class="num"><b>${money(b.total)}</b></td><td>${esc(b.payment_mode || '')}</td><td>${esc(b.waiter || '')}</td>
         <td class="right" style="white-space:nowrap"><button class="btn btn-sm" data-view>View</button>${status === 'paid' ? ' <button class="btn btn-sm" data-print>Reprint</button>' : ''}</td></tr>`).join('')
-      || '<tr><td colspan="8" class="muted">Nothing found in this period</td></tr>'}</tbody>`;
+      || '<tr><td colspan="9" class="muted">Nothing found in this period</td></tr>'}</tbody>`;
     t.querySelectorAll('tr[data-id]').forEach((tr) => {
       const id = tr.dataset.id;
       tr.querySelector('[data-view]').onclick = () => view(id);
@@ -82,7 +82,7 @@ export function mountBills(root) {
     let b;
     try { b = await api('GET', `/api/bills/${id}`); } catch (e) { return toastErr(e); }
     await modal(`Bill ${b.bill_no || '(none)'} — ${b.hall_name} / ${b.table_name}`, (body, close) => {
-      body.innerHTML = `<p class="muted">Opened ${esc(b.opened_at)} · Closed ${esc(b.closed_at || '')} · ${esc(b.status)}${b.payment_mode ? ' · ' + esc(b.payment_mode) : ''}</p>
+      body.innerHTML = `<p class="muted">Opened ${esc(b.opened_at)} · Closed ${esc(b.closed_at || '')} · ${esc(b.status)}${b.payment_mode ? ' · ' + esc(b.payment_mode) : ''}${b.waiter ? ' · Waiter: ' + esc(b.waiter) : ''}</p>
         <table class="data"><thead><tr><th>Code</th><th>Item</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead><tbody>
         ${b.items.map((i) => `<tr><td>${esc(i.code)}</td><td>${esc(i.name)}</td><td class="num">${qtyFmt(i.qty)}</td><td class="num">${money(i.price)}</td><td class="num">${money(i.price * i.qty)}</td></tr>`).join('')}
         </tbody></table>
@@ -106,8 +106,8 @@ export function mountBills(root) {
   root.querySelector('.cat').onchange = (e) => { category = e.target.value; if (data) { drawList(); drawTop(); } };
   root.querySelector('[data-export]').onclick = () => {
     if (!data) return;
-    const rows = [['Bill no', 'Closed at', 'Hall', 'Table', 'Items', 'Subtotal', 'Discount', 'Taxable', 'CGST %', 'CGST', 'SGST %', 'SGST', 'Round off', 'Total', 'Payment', 'Status'],
-      ...visible().map((b) => [b.bill_no, b.closed_at, b.hall_name, b.table_name, b.items_text, b.subtotal, b.discount, b.taxable, b.cgst_pct, b.cgst, b.sgst_pct, b.sgst, b.round_off, b.total, b.payment_mode, b.status])];
+    const rows = [['Bill no', 'Closed at', 'Hall', 'Table', 'Items', 'Subtotal', 'Discount', 'Taxable', 'CGST %', 'CGST', 'SGST %', 'SGST',     'Round off', 'Total', 'Payment', 'Waiter', 'Status'],
+          ...visible().map((b) => [b.bill_no, b.closed_at, b.hall_name, b.table_name, b.items_text, b.subtotal, b.discount, b.taxable, b.cgst_pct, b.cgst, b.sgst_pct, b.sgst, b.round_off, b.total, b.payment_mode, b.waiter, b.status])];
     downloadFile(`bills-${from}-to-${to}.csv`, toCsv(rows));
   };
   periodBar(root.querySelector('.period-host'), (f, t) => { from = f; to = t; load(); });

@@ -7,6 +7,7 @@ const TABS = [
   ['menu', 'Menu list'],
   ['halls', 'Halls & layout'],
   ['settings', 'Restaurant & tax'],
+  ['sessions', 'Sessions & closing'],
   ['printer', 'Printer'],
   ['security', 'Security & backup'],
 ];
@@ -23,7 +24,7 @@ export function mountConfig(root) {
     sessionStorage.setItem('cfgTab', k);
     root.querySelectorAll('[data-t]').forEach((b) => b.classList.toggle('active', b.dataset.t === k));
     body.innerHTML = '';
-    cleanup = ({ menu: menuTab, halls: hallsTab, settings: settingsTab, printer: printerTab, security: securityTab })[k](body) || null;
+    cleanup = ({ menu: menuTab, halls: hallsTab, settings: settingsTab, sessions: sessionsTab, printer: printerTab, security: securityTab })[k](body) || null;
   };
   root.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => show(b.dataset.t)));
   show(active);
@@ -469,4 +470,47 @@ function securityTab(el) {
   el.querySelector('[data-backup]').onclick = () => api('POST', '/api/backups').then((r) => { toast(`Backup saved: ${r.name}`, 'ok'); loadBackups(); }, toastErr);
   el.querySelector('[data-savedays]').onclick = () => api('PUT', '/api/settings', { autoBackupDays: Number(el.querySelector('.days').value) }).then(() => { loadSettings(); toast('Saved', 'ok'); }, toastErr);
   loadBackups();
+}
+
+// ---------------- Sessions & closing ----------------
+function sessionsTab(el) {
+  let rows = structuredClone(state.settings.sessions || []);
+  el.innerHTML = `<form class="panel" style="max-width:820px">
+    <h2>Sessions &amp; closing</h2>
+    <p class="muted" style="margin-top:0">Split the day into sessions (e.g. Morning, Afternoon, Night). At the end of each session an admin closes it from the
+      <b>Closings</b> page and prints a summary: income, GST and total. A bill belongs to the session that was running when it was settled; bills settled
+      a little after the end time still count until the session is closed. A session may run past midnight (e.g. 18:00–01:00).</p>
+    <table class="data sessions"><thead><tr><th>Session name</th><th>Start</th><th>End</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="row" style="margin-top:10px"><button type="button" class="btn" data-add>+ Add session</button></div>
+    <div class="row" style="margin-top:16px">
+      <label class="field" style="flex-direction:row;align-items:center;gap:8px">If a session was not closed, keep counting its late bills for
+        <input type="number" name="grace" min="0" max="240" step="5" style="width:80px" value="${state.settings.closingGraceMinutes ?? 30}"> minutes after the next session starts</label>
+    </div>
+    <div class="actions" style="margin-top:18px"><button class="btn btn-primary btn-lg">Save</button></div>
+  </form>`;
+  const tbody = el.querySelector('tbody');
+  const draw = () => {
+    tbody.innerHTML = rows.map((r, i) => `<tr data-i="${i}">
+      <td><input data-k="name" maxlength="30" value="${esc(r.name)}" style="width:100%"></td>
+      <td><input data-k="start" type="time" value="${esc(r.start)}"></td>
+      <td><input data-k="end" type="time" value="${esc(r.end)}"></td>
+      <td class="right"><button type="button" class="btn btn-sm btn-danger" data-del ${rows.length < 2 ? 'disabled' : ''}>Remove</button></td></tr>`).join('');
+    tbody.querySelectorAll('tr').forEach((tr) => {
+      const r = rows[Number(tr.dataset.i)];
+      tr.querySelectorAll('input').forEach((inp) => (inp.oninput = () => { r[inp.dataset.k] = inp.value; }));
+      tr.querySelector('[data-del]').onclick = () => { rows = rows.filter((x) => x !== r); draw(); };
+    });
+  };
+  el.querySelector('[data-add]').onclick = () => { rows.push({ name: '', start: '', end: '' }); draw(); tbody.querySelector('tr:last-child input').focus(); };
+  el.querySelector('form').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await api('PUT', '/api/settings', { sessions: rows, closingGraceMinutes: Number(el.querySelector('[name=grace]').value) || 0 });
+      await loadSettings();
+      rows = structuredClone(state.settings.sessions);
+      draw();
+      toast('Sessions saved', 'ok');
+    } catch (err) { toastErr(err); }
+  };
+  draw();
 }

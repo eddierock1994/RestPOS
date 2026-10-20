@@ -27,6 +27,12 @@ const DEFAULT_SETTINGS = {
   autoCut: true,
   printCopies: 1,
   autoBackupDays: 30,
+  sessions: [
+    { name: 'Morning', start: '06:00', end: '11:30' },
+    { name: 'Afternoon', start: '11:30', end: '17:00' },
+    { name: 'Night', start: '17:00', end: '23:30' },
+  ],
+  closingGraceMinutes: 30,
 };
 
 const SCHEMA = `
@@ -81,6 +87,7 @@ CREATE TABLE IF NOT EXISTS orders (
   round_off     REAL NOT NULL DEFAULT 0,
   total         REAL NOT NULL DEFAULT 0,
   payment_mode  TEXT,
+  waiter        TEXT NOT NULL DEFAULT '',
   opened_at     TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   billed_at     TEXT,
   closed_at     TEXT
@@ -99,6 +106,23 @@ CREATE TABLE IF NOT EXISTS order_items (
   added_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+CREATE TABLE IF NOT EXISTS closings (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  business_date TEXT NOT NULL,
+  session       TEXT NOT NULL,
+  part          INTEGER NOT NULL DEFAULT 1,
+  session_start TEXT NOT NULL,
+  session_end   TEXT NOT NULL,
+  period_to     TEXT NOT NULL,
+  closed_at     TEXT NOT NULL,
+  bills         INTEGER NOT NULL DEFAULT 0,
+  taxable       REAL NOT NULL DEFAULT 0,
+  cgst          REAL NOT NULL DEFAULT 0,
+  sgst          REAL NOT NULL DEFAULT 0,
+  total         REAL NOT NULL DEFAULT 0,
+  details       TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_closings_date ON closings(business_date);
 `;
 
 function hashPin(pin, salt = crypto.randomBytes(16).toString('hex')) {
@@ -122,6 +146,14 @@ function migrate(db) {
     db.exec("UPDATE order_items SET category = COALESCE((SELECT m.category FROM menu_items m WHERE m.id = order_items.item_id), '')");
   }
   db.exec('CREATE INDEX IF NOT EXISTS idx_orders_status_closed ON orders(status, closed_at)');
+  const orderCols = db.prepare('PRAGMA table_info(orders)').all().map((c) => c.name);
+  if (!orderCols.includes('closing_id')) {
+    db.exec('ALTER TABLE orders ADD COLUMN closing_id INTEGER');
+    // Bills from before session closings existed are treated as already closed (closing 0).
+    db.exec("UPDATE orders SET closing_id = 0 WHERE status IN ('paid','cancelled')");
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_orders_closing ON orders(closing_id)');
+  if (!orderCols.includes('waiter')) db.exec("ALTER TABLE orders ADD COLUMN waiter TEXT NOT NULL DEFAULT ''");
 }
 
 function open(dbFile, { seedDemo = true } = {}) {

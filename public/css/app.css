@@ -248,3 +248,21 @@ table.cats tfoot th { border-top: 2px solid var(--border); }
   .order-pane { width: 370px; }
   .props { width: 180px; }
 }
+
+/* closings */
+.reminder { background: #f59e0b; color: #111827; font-weight: 700; padding: 5px 12px; border-radius: 6px; text-decoration: none; white-space: nowrap; }
+.reminder:hover { background: #fbbf24; }
+.alert { background: #fffbeb; border: 1px solid #f59e0b; color: #78350f; padding: 9px 12px; border-radius: 6px; margin-bottom: 12px; }
+.closing-sum .cs-main { display: flex; align-items: stretch; gap: 10px; }
+.cs-box { flex: 1; background: #f9fafb; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+.cs-box .k { font-size: 13px; color: var(--muted); }
+.cs-box .v { font-size: 26px; font-weight: 700; margin-top: 2px; }
+.cs-box.total { background: #ecfdf5; border-color: #86efac; }
+.cs-box.total .v { color: var(--success); }
+.cs-sub { font-size: 12px; margin-top: 2px; }
+.cs-op { align-self: center; font-size: 26px; color: var(--muted); font-weight: 300; }
+.cs-details { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 16px; margin-top: 14px; }
+.cs-details h3 { font-size: 14px; margin-bottom: 6px; }
+.cs-details p { margin: 0 0 4px; }
+.cs-details table.data td { padding: 4px 6px; }
+table.sessions input[type=time] { width: 130px; }

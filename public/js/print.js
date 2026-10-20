@@ -30,7 +30,8 @@ export function receiptHtml(order, s, { duplicate = false } = {}) {
     ${duplicate ? '<div class="c b">DUPLICATE</div>' : ''}
     <hr>
     <table><tr><td>Bill: <b>${esc(order.bill_no || '-')}</b></td><td class="r">${fmtDate(order.closed_at || order.billed_at)}</td></tr>
-    <tr><td>Table: <b>${esc(order.table_name)}</b></td><td class="r">${esc(order.hall_name)}</td></tr></table>
+    <tr><td>Table: <b>${esc(order.table_name)}</b></td><td class="r">${esc(order.hall_name)}</td></tr>
+    ${order.waiter ? `<tr><td colspan="2">Waiter: <b>${esc(order.waiter)}</b></td></tr>` : ''}</table>
     <hr>
     <table>
       <tr><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amt</th></tr>
@@ -96,4 +97,46 @@ export async function printTest() {
     await api('POST', '/api/print/test');
     toast('Test page sent', 'ok');
   }
+}
+
+/** Receipt-width HTML for a session closing (browser print mode). */
+export function closingHtml(c, s) {
+  const width = Number(s.paperWidth) === 58 ? 48 : 72;
+  const time = (ts) => String(ts || '').slice(11, 16);
+  const row = (k, v, cls = '') => `<tr class="${cls}"><td>${esc(k)}</td><td class="r">${esc(v)}</td></tr>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    @page { margin: 0; } * { box-sizing: border-box; }
+    body { width: ${width}mm; margin: 0 auto; padding: 2mm 0 6mm; font-family: "Courier New", monospace; font-size: 12px; color: #000; }
+    h1 { font-size: 17px; margin: 0; text-align: center; } .c { text-align: center; } .r { text-align: right; } .b, .b td { font-weight: bold; }
+    hr { border: 0; border-top: 1px dashed #000; margin: 4px 0; } table { width: 100%; border-collapse: collapse; } td { padding: 1px 0; vertical-align: top; }
+    .grand td { font-size: 16px; font-weight: bold; } .ind td:first-child { padding-left: 3mm; }
+  </style></head><body>
+    <h1>${esc(s.restaurantName)}</h1><div class="c b">SESSION CLOSING REPORT</div><hr>
+    <table>
+      ${row('Session', `${c.session}${c.part > 1 ? ` (part ${c.part})` : ''}`)}
+      ${row('Date', fmtDate(c.date + ' 00:00').slice(0, 10))}
+      ${row('Session time', `${time(c.sessionStart)} - ${time(c.sessionEnd)}`)}
+      ${row('Closed at', fmtDate(c.closedAt))}
+      ${row('Bills', c.bills ? `${c.bills} (${c.firstBill} to ${c.lastBill})` : '0')}
+    </table><hr><table>
+      ${c.discount > 0 ? row('Gross sales', money(c.gross)) + row('Less discount', '-' + money(c.discount)) : ''}
+      ${row('INCOME (excl. GST)', money(c.taxable), 'b')}
+      ${row('CGST', money(c.cgst), 'ind')}${row('SGST', money(c.sgst), 'ind')}
+      ${row('GST TOTAL', money(c.gst), 'b')}
+      ${c.roundOff ? row('Round off', money(c.roundOff)) : ''}
+    </table><hr><table>${row('TOTAL', `${s.currencySymbol || ''} ${money(c.total)}`, 'grand')}</table><hr>
+    ${c.payments?.length ? `<div class="b">Payment modes</div><table>${c.payments.map((m) => row(`${m.mode} (${m.bills})`, money(m.total), 'ind')).join('')}</table><hr>` : ''}
+    ${c.categories?.length ? `<div class="b">Categories (excl. GST)</div><table>${c.categories.map((x) => row(`${x.category} x${qtyFmt(x.qty)}`, money(x.net), 'ind')).join('')}</table><hr>` : ''}
+    ${c.cancelled?.count ? `<div>Cancelled orders: ${c.cancelled.count} (${money(c.cancelled.amount)})</div>` : ''}
+    <p style="margin-top:8mm">Signature: ____________________</p>
+  </body></html>`;
+}
+
+export async function printClosing(c) {
+  const s = state.settings;
+  try {
+    if (s.printerMode === 'browser') await browserPrint(closingHtml(c, s));
+    else { await api('POST', `/api/print/closing/${c.id}`); toast('Closing report sent to printer', 'ok'); }
+    return true;
+  } catch (e) { toastErr(e); return false; }
 }

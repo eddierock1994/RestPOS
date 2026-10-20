@@ -5,9 +5,10 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const dbm = require('./db');
 const { computeTotals } = require('./billing');
-const { buildReceipt, buildTestPage } = require('./escpos');
+const { buildReceipt, buildTestPage, buildClosingReport } = require('./escpos');
 const printer = require('./printer');
 const { analytics } = require('./analytics');
+const closings = require('./closings');
 
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -221,6 +222,8 @@ function createApp({ dataDir = process.env.POS_DATA_DIR || path.join(ROOT, 'data
     s.pricesIncludeTax = !!s.pricesIncludeTax;
     s.roundOff = !!s.roundOff;
     s.autoCut = !!s.autoCut;
+    s.sessions = closings.validateSessions(s.sessions);
+    s.closingGraceMinutes = Math.max(0, Math.min(240, int(s.closingGraceMinutes ?? 30, 'grace minutes')));
     tx(() => { for (const k of allowed) putSetting.run(k, JSON.stringify(s[k])); });
     return getSettings();
   });
@@ -413,11 +416,15 @@ function createApp({ dataDir = process.env.POS_DATA_DIR || path.join(ROOT, 'data
     const order = openOrderStmt.get(table.id);
     if (!order) throw new HttpError(400, 'No open order on this table');
     const mode = PAYMENT_MODES.includes(body.paymentMode) ? body.paymentMode : 'Cash';
+    const waiter = str(body.waiter, 'Waiter name', { max: 40 });
     snapshotTotals(order, "status='paid', closed_at=datetime('now','localtime')");
-    db.prepare('UPDATE orders SET payment_mode = ? WHERE id = ?').run(mode, order.id);
+    db.prepare('UPDATE orders SET payment_mode = ?, waiter = ? WHERE id = ?').run(mode, waiter, order.id);
     db.prepare('UPDATE tables SET busy = 0 WHERE id = ?').run(table.id);
     return orderView(db.prepare('SELECT * FROM orders WHERE id = ?').get(order.id));
   }));
+  // Recently used waiter names, most recent first (suggestions for the settle dialog).
+  route('GET', '/api/waiters', () => db.prepare(`SELECT waiter FROM orders WHERE waiter <> '' AND status = 'paid'
+    GROUP BY waiter COLLATE NOCASE ORDER BY MAX(closed_at) DESC LIMIT 50`).all().map((r) => r.waiter));
   route('POST', '/api/tables/:id/cancel', ({ params, body }) => tx(() => {
     if (!checkPin(body.pin)) throw new HttpError(401, 'Admin PIN required to cancel an order');
     const table = getTable(int(params.id, 'id'));
@@ -473,6 +480,42 @@ function createApp({ dataDir = process.env.POS_DATA_DIR || path.join(ROOT, 'data
     return orderView(o);
   });
 
+  // session closings (admin only, except the reminder shown on every screen)
+  route('GET', '/api/closings/reminder', () => {
+    const st = closings.status(db, getSettings(), new Date(), { withSummary: false });
+    return { session: st.target.session, date: st.target.date, ended: st.target.ended, pending: st.pending.length };
+  });
+  route('GET', '/api/closings/status', ({ req }) => { requireAdmin(req); return closings.status(db, getSettings()); });
+  route('GET', '/api/closings', ({ req, query }) => {
+    requireAdmin(req);
+    const re = /^\d{4}-\d{2}-\d{2}$/;
+    const today = closings.fmt(new Date()).slice(0, 10);
+    const from = re.test(query.from || '') ? query.from : today;
+    const to = re.test(query.to || '') ? query.to : from;
+    return closings.listClosings(db, from, to);
+  });
+  route('POST', '/api/closings', ({ req, body }) => {
+    requireAdmin(req);
+    return closings.closeSession(db, getSettings(), { date: str(body.date, 'date', { required: true }), session: str(body.session, 'session', { required: true }) });
+  });
+  route('GET', '/api/closings/:id', ({ req, params }) => {
+    requireAdmin(req);
+    const c = closings.getClosing(db, int(params.id, 'id'));
+    if (!c) throw new HttpError(404, 'Closing not found');
+    return c;
+  });
+  route('DELETE', '/api/closings/:id', ({ req, params }) => {
+    requireAdmin(req);
+    closings.undoClosing(db, int(params.id, 'id'));
+    return { ok: true };
+  });
+  route('POST', '/api/print/closing/:id', async ({ req, params }) => {
+    requireAdmin(req);
+    const c = closings.getClosing(db, int(params.id, 'id'));
+    if (!c) throw new HttpError(404, 'Closing not found');
+    await serverPrint(buildClosingReport(c, getSettings()));
+    return { ok: true };
+  });
   // printing
   route('POST', '/api/print/order/:id', async ({ params, body }) => {
     const o = db.prepare('SELECT * FROM orders WHERE id = ?').get(int(params.id, 'id'));
